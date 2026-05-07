@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zombie Math Survival</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Orbitron',sans-serif;
+    background:linear-gradient(135deg,#0f172a,#111827,#1e293b);
+    color:white;
+    overflow:hidden;
+}
+
+#gameContainer{
+    display:flex;
+    height:100vh;
+}
+
+#leftPanel{
+    width:260px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(10px);
+    padding:20px;
+    border-right:2px solid rgba(255,255,255,0.1);
+}
+
+#leftPanel h1{
+    font-size:28px;
+    margin-bottom:20px;
+    color:#22c55e;
+}
+
+.card{
+    background:rgba(255,255,255,0.08);
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 0 15px rgba(255,255,255,0.08);
+}
+
+.card h2{
+    margin-bottom:10px;
+    font-size:18px;
+}
+
+.stat{
+    font-size:24px;
+    font-weight:bold;
+    color:#38bdf8;
+}
+
+#logBox{
+    height:220px;
+    overflow-y:auto;
+    font-size:14px;
+    line-height:1.6;
+}
+
+#gameArea{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    background:url('https://images.unsplash.com/photo-1502134249126-9f3755a50d78?q=80&w=1400&auto=format&fit=crop') center/cover no-repeat;
+}
+
+#overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+}
+
+#player{
+    position:absolute;
+    bottom:40px;
+    left:50%;
+    transform:translateX(-50%);
+    width:80px;
+    height:80px;
+    font-size:60px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:2;
+}
+
+.zombie{
+    position:absolute;
+    width:70px;
+    height:70px;
+    font-size:50px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:2;
+}
+
+.bullet{
+    position:absolute;
+    width:10px;
+    height:25px;
+    background:#facc15;
+    border-radius:10px;
+    box-shadow:0 0 10px yellow;
+    z-index:2;
+}
+
+#questionBox{
+    position:absolute;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    width:500px;
+    background:rgba(15,23,42,0.92);
+    padding:20px;
+    border-radius:20px;
+    text-align:center;
+    z-index:5;
+    box-shadow:0 0 25px rgba(56,189,248,0.4);
+}
+
+#questionText{
+    font-size:28px;
+    margin-bottom:20px;
+}
+
+.answers{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:15px;
+}
+
+.answerBtn{
+    padding:15px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(135deg,#22c55e,#06b6d4);
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.answerBtn:hover{
+    transform:scale(1.05);
+}
+
+#startScreen,
+#gameOverScreen{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.88);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    z-index:10;
+}
+
+#startScreen h1,
+#gameOverScreen h1{
+    font-size:56px;
+    margin-bottom:20px;
+    color:#22c55e;
+}
+
+button.mainBtn{
+    padding:15px 35px;
+    border:none;
+    border-radius:16px;
+    font-size:22px;
+    font-weight:bold;
+    cursor:pointer;
+    background:linear-gradient(135deg,#22c55e,#06b6d4);
+    color:white;
+    margin-top:15px;
+    transition:0.3s;
+}
+
+button.mainBtn:hover{
+    transform:scale(1.08);
+}
+
+#mobileControls{
+    position:absolute;
+    bottom:20px;
+    width:100%;
+    display:none;
+    justify-content:center;
+    gap:20px;
+    z-index:6;
+}
+
+.mobileBtn{
+    width:70px;
+    height:70px;
+    border:none;
+    border-radius:50%;
+    font-size:30px;
+    background:#0ea5e9;
+    color:white;
+}
+
+@media(max-width:768px){
+    #leftPanel{
+        display:none;
+    }
+
+    #mobileControls{
+        display:flex;
+    }
+
+    #questionBox{
+        width:90%;
+    }
+}
+
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+
+<div id="leftPanel">
+    <h1>🧟 Zombie Math</h1>
+
+    <div class="card">
+        <h2>⭐ Skor</h2>
+        <div class="stat" id="score">0</div>
+    </div>
+
+    <div class="card">
+        <h2>❤️ Nyawa</h2>
+        <div class="stat" id="lives">3</div>
+    </div>
+
+    <div class="card">
+        <h2>🏆 Level</h2>
+        <div class="stat" id="level">1</div>
+    </div>
+
+    <div class="card">
+        <h2>📜 Log Permainan</h2>
+        <div id="logBox"></div>
+    </div>
+</div>
+
+<div id="gameArea">
+<div id="overlay"></div>
+
+<div id="player">🧑‍🚀</div>
+
+<div id="questionBox">
+    <div id="questionText">2x + 3 = 11</div>
+
+    <div class="answers">
+        <button class="answerBtn"></button>
+        <button class="answerBtn"></button>
+        <button class="answerBtn"></button>
+        <button class="answerBtn"></button>
+    </div>
+</div>
+
+<div id="mobileControls">
+    <button class="mobileBtn" id="leftBtn">⬅</button>
+    <button class="mobileBtn" id="shootBtn">🔥</button>
+    <button class="mobileBtn" id="rightBtn">➡</button>
+</div>
+
+<div id="startScreen">
+    <h1>🧟 Zombie Math Survival</h1>
+    <p>Jawab soal matematika untuk mengalahkan zombie!</p>
+    <button class="mainBtn" onclick="startGame()">▶ Mulai Game</button>
+</div>
+
+<div id="gameOverScreen" style="display:none;">
+    <h1>💀 Game Over</h1>
+    <h2>Skor Akhir: <span id="finalScore">0</span></h2>
+    <button class="mainBtn" onclick="restartGame()">🔄 Main Lagi</button>
+</div>
+
+</div>
+</div>
+
+<script>
+
+const gameArea=document.getElementById('gameArea');
+const player=document.getElementById('player');
+const scoreEl=document.getElementById('score');
+const livesEl=document.getElementById('lives');
+const levelEl=document.getElementById('level');
+const logBox=document.getElementById('logBox');
+const questionText=document.getElementById('questionText');
+const answerButtons=document.querySelectorAll('.answerBtn');
+
+let playerX=window.innerWidth/2;
+let score=0;
+let lives=3;
+let level=1;
+let zombies=[];
+let bullets=[];
+let gameRunning=false;
+let currentQuestion={};
+
+const questions=[
+{q:'2x + 3 = 11',a:4},
+{q:'5x - 7 = 18',a:5},
+{q:'3x = 21',a:7},
+{q:'4x + 2 = 10',a:2},
+{q:'6x - 9 = 15',a:4},
+{q:'x + 8 = 12',a:4},
+{q:'7x = 35',a:5},
+{q:'9x - 3 = 24',a:3},
+{q:'10x + 5 = 25',a:2},
+{q:'8x - 4 = 12',a:2}
+];
+
+function addLog(text){
+    logBox.innerHTML='<div>'+text+'</div>'+logBox.innerHTML;
+}
+
+function startGame(){
+    document.getElementById('startScreen').style.display='none';
+
+    gameRunning=true;
+
+    spawnQuestion();
+
+    setInterval(spawnZombie,2000);
+
+    requestAnimationFrame(gameLoop);
+
+    addLog('🎮 Game dimulai');
+}
+
+function spawnQuestion(){
+
+    currentQuestion=questions[Math.floor(Math.random()*questions.length)];
+
+    questionText.textContent=currentQuestion.q;
+
+    let answers=[currentQuestion.a];
+
+    while(answers.length<4){
+
+        let wrong=currentQuestion.a+Math.floor(Math.random()*10)-5;
+
+        if(wrong!==currentQuestion.a && wrong>0 && !answers.includes(wrong)){
+            answers.push(wrong);
+        }
+    }
+
+    answers.sort(()=>Math.random()-0.5);
+
+    answerButtons.forEach((btn,index)=>{
+        btn.textContent=answers[index];
+
+        btn.onclick=()=>{
+            checkAnswer(answers[index]);
+        }
+    });
+}
+
+function checkAnswer(answer){
+
+    if(answer===currentQuestion.a){
+
+        score+=10;
+
+        if(score%50===0){
+            level++;
+            addLog('🏆 Level naik menjadi '+level);
+        }
+
+        destroyZombie();
+
+        addLog('✅ Jawaban benar! Zombie dikalahkan');
+
+    }else{
+
+        lives--;
+
+        addLog('❌ Jawaban salah! Nyawa berkurang');
+
+        if(lives<=0){
+            gameOver();
+        }
+    }
+
+    updateUI();
+
+    spawnQuestion();
+}
+
+function updateUI(){
+    scoreEl.textContent=score;
+    livesEl.textContent=lives;
+    levelEl.textContent=level;
+}
+
+function spawnZombie(){
+
+    if(!gameRunning)return;
+
+    const zombie=document.createElement('div');
+
+    zombie.classList.add('zombie');
+
+    zombie.textContent='🧟';
+
+    let x=Math.random()*(window.innerWidth-400)+280;
+
+    zombie.style.left=x+'px';
+    zombie.style.top='-80px';
+
+    gameArea.appendChild(zombie);
+
+    zombies.push({
+        el:zombie,
+        x:x,
+        y:-80,
+        speed:1+level*0.5
+    });
+}
+
+function destroyZombie(){
+
+    if(zombies.length>0){
+
+        let z=zombies.shift();
+
+        z.el.remove();
+    }
+}
+
+function gameLoop(){
+
+    if(!gameRunning)return;
+
+    zombies.forEach((z,index)=>{
+
+        z.y+=z.speed;
+
+        z.el.style.top=z.y+'px';
+
+        if(z.y>window.innerHeight-120){
+
+            lives--;
+
+            updateUI();
+
+            addLog('🧟 Zombie berhasil masuk');
+
+            z.el.remove();
+
+            zombies.splice(index,1);
+
+            if(lives<=0){
+                gameOver();
+            }
+        }
+    });
+
+    requestAnimationFrame(gameLoop);
+}
+
+function gameOver(){
+
+    gameRunning=false;
+
+    document.getElementById('gameOverScreen').style.display='flex';
+
+    document.getElementById('finalScore').textContent=score;
+
+    addLog('💀 Game Over');
+}
+
+function restartGame(){
+    location.reload();
+}
+
+window.addEventListener('keydown',(e)=>{
+
+    if(e.key==='ArrowLeft'){
+        playerX-=25;
+    }
+
+    if(e.key==='ArrowRight'){
+        playerX+=25;
+    }
+
+    player.style.left=playerX+'px';
+});
+
+leftBtn.onclick=()=>{
+    playerX-=25;
+    player.style.left=playerX+'px';
+}
+
+rightBtn.onclick=()=>{
+    playerX+=25;
+    player.style.left=playerX+'px';
+}
+
+shootBtn.onclick=()=>{
+    addLog('🔥 Menembak zombie');
+}
+
+</script>
+</body>
+</html>
+
+
+
